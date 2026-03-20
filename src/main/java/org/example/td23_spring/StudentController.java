@@ -1,5 +1,10 @@
 package org.example.td23_spring;
 
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -7,37 +12,71 @@ import java.util.List;
 
 @RestController
 public class StudentController {
-    private final List<Student> studentList = new ArrayList<>();
+    private final List<Student> students = new ArrayList<>();
+
     @GetMapping("/welcome")
-    public String welcome(@RequestParam String name){
-        return "Welcome " + name;
+    public ResponseEntity<String> welcome(@RequestParam(required = false) String name) {
+        if (name == null || name.isBlank()) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Le paramètre 'name' est requis et ne peut pas être vide.");
+        }
+        return ResponseEntity
+                .ok("Bienvenue, " + name + " !");
     }
 
     @PostMapping("/students")
-    public String addStudent (@RequestBody List<Student> newStudentList){
-        studentList.addAll(newStudentList);
-        StringBuilder result = new StringBuilder();
-        for (Student student : studentList){
-            result.append(student.firstName())
-                    .append(" ")
-                    .append(student.lastName())
-                    .append(", ");
+    public ResponseEntity<List<Student>> createStudents(@RequestBody List<Student> newStudents) {
+        try {
+            students.addAll(newStudents);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(students);
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
         }
-        return result.toString();
     }
 
     @GetMapping("/students")
-    public Object getStudents(@RequestHeader(value = "Accept",defaultValue = "text/plain") String accept){
-        if ((accept==null)||accept.contains("text/plain")||accept.equals("*/*")){
-            StringBuilder result = new StringBuilder();
-            for (Student student : studentList){
-                result.append(student.firstName())
-                        .append(" ")
-                        .append(student.lastName())
-                        .append("\n ");
+    public ResponseEntity<?> getStudents(@RequestHeader(value = HttpHeaders.ACCEPT, required = false) String acceptHeader) {
+        try {
+            if (acceptHeader == null) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("L'en-tête 'Accept' est requis.");
             }
-            return result.toString();
-        }else{return "format not supported";
+
+            if (!acceptHeader.equals(MediaType.TEXT_PLAIN_VALUE) && !acceptHeader.equals(MediaType.APPLICATION_JSON_VALUE)) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_IMPLEMENTED)
+                        .body("Type de contenu non supporté. Utilisez 'text/plain' ou 'application/json'.");
+            }
+
+            if (acceptHeader.equals(MediaType.TEXT_PLAIN_VALUE)) {
+                StringBuilder sb = new StringBuilder();
+                for (Student s : students) {
+                    sb.append("Référence: ").append(s.reference())
+                            .append(", Prénom: ").append(s.firstName())
+                            .append(", Nom: ").append(s.lastName())
+                            .append(", Âge: ").append(s.age())
+                            .append(" ans\n");
+                }
+                return ResponseEntity
+                        .ok()
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .body(sb.toString());
+            } else {
+                return ResponseEntity
+                        .ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(students);
+            }
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
         }
     }
 }
