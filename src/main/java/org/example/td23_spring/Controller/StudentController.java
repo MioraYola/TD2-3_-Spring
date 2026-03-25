@@ -1,6 +1,7 @@
-package org.example.td23_spring;
+package org.example.td23_spring.Controller;
 
 
+import org.example.td23_spring.Model.Student;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,16 +15,6 @@ import java.util.List;
 public class StudentController {
     private final List<Student> students = new ArrayList<>();
 
-    @GetMapping("/welcome")
-    public ResponseEntity<String> welcome(@RequestParam(required = false) String name) {
-        if (name == null || name.isBlank()) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Le paramètre 'name' est requis et ne peut pas être vide.");
-        }
-        return ResponseEntity
-                .ok("Bienvenue, " + name + " !");
-    }
 
     @PostMapping("/students")
     public ResponseEntity<List<Student>> createStudents(@RequestBody List<Student> newStudents) {
